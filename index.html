@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Folio</title>
+<meta name="description" content="A one-handed Hacker News reader that uses both pages of a foldable.">
+<meta name="theme-color" content="#f3f5f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1013" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Folio">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>:root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal-l:env(safe-area-inset-left,0px);--sar-l:env(safe-area-inset-right,0px)}
+/* Folio: a two-page Hacker News reader. On an unfolded foldable the list is the left page,
+   the story and its comments the right page, and the split sits on the fold. */
+:root {
+  --bg: #f3f5f6;
+  --surface: #ffffff;
+  --fg: #161a1f;
+  --muted: #5c6672;
+  --faint: #8a93a0;
+  --line: #e0e4e8;
+  --accent: #0b7a70;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2f1ee;
+  --spine: #dde2e6;
+  --banner-bg: #fff3d4;
+  --banner-fg: #5f4500;
+  --r1: #0b7a70; --r2: #c07a12; --r3: #6d55c8; --r4: #2f6fb3; --r5: #c2456b; --r6: #6b7d1e;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --fs: 1;
+  --split: 50%;
+  --gap: 18px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1013; --surface: #15181c; --fg: #e6e9ec; --muted: #9aa3ad; --faint: #6f7883;
+    --line: #262a30; --accent: #4fc6b6; --accent-ink: #04201c; --accent-soft: #15302c; --spine: #07080a;
+    --banner-bg: #3a2d0c; --banner-fg: #f3d68c;
+    --r1: #4fc6b6; --r2: #e3a346; --r3: #a594f0; --r4: #6ea8e8; --r5: #ec7f9f; --r6: #a9bb52;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1013; --surface: #15181c; --fg: #e6e9ec; --muted: #9aa3ad; --faint: #6f7883;
+  --line: #262a30; --accent: #4fc6b6; --accent-ink: #04201c; --accent-soft: #15302c; --spine: #07080a;
+  --banner-bg: #3a2d0c; --banner-fg: #f3d68c;
+  --r1: #4fc6b6; --r2: #e3a346; --r3: #a594f0; --r4: #6ea8e8; --r5: #ec7f9f; --r6: #a9bb52;
+  color-scheme: dark;
+}
+
+html { height: 100%; font-size: calc(16px * var(--fs)); -webkit-text-size-adjust: 100%; }
+body { height: 100%; margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font); overflow: hidden; }
+[hidden] { display: none !important; }
+* { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- frame ---------- */
+#app { height: 100%; display: grid; grid-template-columns: 100%; position: relative; overflow: hidden; }
+#app.two { grid-template-columns: var(--split) var(--gap) minmax(0, 1fr); background: var(--spine); }
+.pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); position: relative; }
+#spine { display: none; }
+#app.two #spine { display: block; background: var(--spine); }
+#app.one #listPane, #app.one #detailPane { grid-area: 1 / 1; }
+#app.one #detailPane { transform: translateX(100%); transition: transform .28s cubic-bezier(.2,.8,.2,1); z-index: 2; box-shadow: -8px 0 24px rgba(0,0,0,.08); }
+#app.one.reading #detailPane { transform: none; }
+#app.one.reading #listPane { visibility: hidden; transition: visibility 0s .28s; }
+#app.two .only-one { display: none !important; }
+@media (prefers-reduced-motion: reduce) { #app.one #detailPane { transition: none; } }
+
+.bar { flex: none; display: flex; align-items: center; gap: .25rem; background: var(--surface); border-color: var(--line); border-style: solid; border-width: 0; }
+.topbar { border-bottom-width: 1px; min-height: 52px; padding: var(--sat) calc(10px + var(--sar-l)) 0 calc(10px + var(--sal-l)); }
+.bottombar { border-top-width: 1px; padding: 0 calc(6px + var(--sar-l)) var(--sab) calc(6px + var(--sal-l)); }
+#app.two #listPane .topbar, #app.two #listPane .bottombar { padding-right: 10px; }
+#app.two #detailPane .topbar, #app.two #detailPane .bottombar { padding-left: 10px; }
+
+.brand { display: flex; align-items: center; gap: .45rem; font-weight: 700; letter-spacing: -.01em; font-size: 1.05rem; margin-right: auto; padding-left: 4px; }
+.brand svg { width: 22px; height: 22px; color: var(--accent); flex: none; }
+.brand small { font-weight: 500; color: var(--muted); font-size: .85rem; letter-spacing: 0; }
+.icon-btn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; color: var(--muted); flex: none; text-decoration: none; }
+.icon-btn:active { background: var(--accent-soft); }
+.icon-btn svg { width: 22px; height: 22px; }
+.icon-btn[aria-pressed="true"] { color: var(--accent); }
+.icon-btn.spin svg { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.scroller { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; position: relative; }
+
+/* ---------- banner ---------- */
+.banner { flex: none; background: var(--banner-bg); color: var(--banner-fg); font-size: .8rem; line-height: 1.35; padding: .55rem 14px; }
+
+/* ---------- tabs ---------- */
+.tabs { display: flex; width: 100%; }
+.tab { flex: 1; min-width: 0; height: 54px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: .72rem; font-weight: 600; color: var(--faint); letter-spacing: .01em; }
+.tab svg { width: 20px; height: 20px; }
+.tab[aria-selected="true"] { color: var(--accent); }
+
+/* ---------- pull to refresh ---------- */
+.ptr { height: 0; overflow: hidden; display: grid; place-items: end center; color: var(--muted); font-size: .78rem; }
+.ptr span { padding-bottom: 10px; }
+
+/* ---------- story list ---------- */
+.list { list-style: none; margin: 0; padding: 0; }
+.story { display: flex; align-items: stretch; border-bottom: 1px solid var(--line); background: var(--surface); }
+.story.sel { background: var(--accent-soft); }
+.s-main { flex: 1; min-width: 0; display: flex; gap: .7rem; padding: .8rem .2rem .8rem calc(14px + var(--sal-l)); text-decoration: none; color: inherit; }
+#app.two .s-main { padding-left: 14px; }
+.s-rank { flex: none; width: 1.6rem; text-align: right; color: var(--faint); font-size: .8rem; font-variant-numeric: tabular-nums; padding-top: .15rem; }
+.s-body { min-width: 0; display: flex; flex-direction: column; gap: .3rem; }
+.s-title { font-size: 1rem; line-height: 1.32; font-weight: 600; overflow-wrap: anywhere; }
+.story.read .s-title { color: var(--muted); font-weight: 500; }
+.s-meta { font-size: .78rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: .15rem .55rem; font-variant-numeric: tabular-nums; }
+.s-meta .dom { color: var(--accent); font-weight: 500; overflow-wrap: anywhere; }
+.s-meta .new { color: var(--accent-ink); background: var(--accent); border-radius: 6px; padding: 0 .35rem; font-weight: 700; }
+.s-open { flex: none; width: 52px; display: grid; place-items: center; color: var(--faint); text-decoration: none; border-left: 1px solid var(--line); margin-right: var(--sar-l); }
+#app.two .s-open { margin-right: 0; }
+.s-open svg { width: 20px; height: 20px; }
+.s-open:active { color: var(--accent); background: var(--accent-soft); }
+.list-foot { padding: 1.4rem 16px 2rem; text-align: center; color: var(--muted); font-size: .85rem; }
+.list-foot button, .empty button { color: var(--accent); font-weight: 600; padding: .6rem 1rem; border-radius: 10px; background: var(--accent-soft); }
+.skel { height: 4.4rem; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, var(--surface) 0, var(--bg) 50%, var(--surface) 100%) 0 0 / 200% 100%; animation: shimmer 1.2s ease-in-out infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
+/* ---------- detail ---------- */
+.d-title-bar { font-size: .9rem; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; padding: 0 .25rem; }
+.detail { padding: 1rem calc(16px + var(--sar-l)) 5.5rem 16px; max-width: 46rem; }
+#app.one .detail { padding-left: calc(16px + var(--sal-l)); }
+#app.two .detail { padding-right: 16px; }
+.d-head { display: flex; flex-direction: column; gap: .55rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
+.d-head h1 { margin: 0; font-size: 1.32rem; line-height: 1.28; letter-spacing: -.01em; text-wrap: balance; overflow-wrap: anywhere; }
+.d-head h1 a { text-decoration: none; }
+.d-meta { font-size: .82rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: .2rem .6rem; font-variant-numeric: tabular-nums; }
+.d-meta .dom { color: var(--accent); font-weight: 500; }
+.d-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .2rem; }
+.pill { display: inline-flex; align-items: center; gap: .4rem; min-height: 40px; padding: 0 .9rem; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: .85rem; font-weight: 600; text-decoration: none; color: var(--fg); }
+.pill.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.pill svg { width: 16px; height: 16px; }
+.d-text { font-size: .98rem; line-height: 1.55; overflow-wrap: anywhere; }
+.d-count { margin: 1.1rem 0 .3rem; font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); }
+.empty { padding: 3rem 1rem; text-align: center; color: var(--muted); font-size: .92rem; line-height: 1.5; display: grid; gap: 1rem; justify-items: center; }
+.empty svg { width: 56px; height: 56px; color: var(--faint); }
+
+/* ---------- comments ---------- */
+.c { --rail: var(--r1); margin-top: .9rem; }
+.c[data-depth="1"] { --rail: var(--r2); } .c[data-depth="2"] { --rail: var(--r3); } .c[data-depth="3"] { --rail: var(--r4); }
+.c[data-depth="4"] { --rail: var(--r5); } .c[data-depth="5"] { --rail: var(--r6); } .c[data-depth="6"] { --rail: var(--r1); } .c[data-depth="7"] { --rail: var(--r2); }
+.c-kids { border-left: 2px solid var(--rail); padding-left: .7rem; margin-left: .1rem; }
+.c[data-depth="6"] > .c-body > .c-kids, .c[data-depth="7"] > .c-body > .c-kids { padding-left: .35rem; }
+.c-head { display: flex; align-items: center; gap: .5rem; width: 100%; min-height: 34px; text-align: left; font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.c-head .by { font-weight: 700; color: var(--rail); }
+.c-head .op { font-size: .66rem; font-weight: 800; letter-spacing: .06em; color: var(--accent-ink); background: var(--accent); padding: 1px 5px; border-radius: 5px; }
+.c-head .fold { margin-left: auto; color: var(--faint); font-weight: 600; }
+.c-text { font-size: .95rem; line-height: 1.5; overflow-wrap: anywhere; }
+.c-text p, .d-text p { margin: .55em 0 0; }
+.c-text a, .d-text a { color: var(--accent); }
+.c-text pre, .d-text pre { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .6rem .7rem; font-size: .82rem; line-height: 1.4; }
+.c-text code, .d-text code { font-family: var(--mono); font-size: .88em; }
+.c-text .quote { color: var(--muted); }
+.c.folded > .c-body { display: none; }
+.c.folded > .c-head .fold::before { content: "+"; }
+.c.dead .c-text { color: var(--faint); font-style: italic; }
+.more { margin: 1.2rem 0; }
+
+/* ---------- floating next-comment button ---------- */
+.fab { position: absolute; right: calc(14px + var(--sar-l)); bottom: calc(66px + var(--sab)); width: 52px; height: 52px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; box-shadow: 0 6px 18px rgba(0,0,0,.18); z-index: 3; }
+#app.two .fab { right: 14px; }
+.fab svg { width: 24px; height: 24px; }
+
+/* ---------- settings sheet ---------- */
+.sheet-wrap { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.35); display: grid; align-items: end; justify-items: center; }
+.sheet { width: min(100%, 30rem); background: var(--surface); border-radius: 18px 18px 0 0; padding: 1rem 18px calc(1.2rem + var(--sab)); display: grid; gap: 1rem; max-height: 85%; overflow-y: auto; }
+.sheet h2 { margin: 0; font-size: 1.05rem; }
+.sheet .row { display: grid; gap: .45rem; }
+.sheet .row > span { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); }
+.seg { display: flex; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+.seg button { flex: 1; min-height: 40px; border-radius: 9px; font-size: .88rem; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.sheet .note { font-size: .8rem; color: var(--muted); line-height: 1.45; margin: 0; }
+.sheet .done { min-height: 46px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.sheet .link { color: var(--accent); font-weight: 600; justify-self: start; min-height: 40px; }
+
+/* ---------- right-thumb back button ---------- */
+.back-btn { display: inline-flex; align-items: center; gap: .2rem; min-height: 44px; min-width: 96px; justify-content: center; padding: 0 1rem 0 .7rem; margin: 5px 0; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: .95rem; }
+.back-btn svg { width: 20px; height: 20px; }
+#detailPane.dragging { transition: none !important; }
+</style>
+</head>
+<body>
+<div id="app" class="one">
+  <section class="pane" id="listPane" aria-label="Stories">
+    <header class="bar topbar">
+      <div class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 5.5c3-1 6-1 8 .8v13c-2-1.8-5-1.8-8-.8z"/><path d="M21 5.5c-3-1-6-1-8 .8v13c2-1.8 5-1.8 8-.8z"/></svg>
+        Folio <small id="secLabel">Top</small>
+      </div>
+      <button class="icon-btn" id="refreshBtn" aria-label="Refresh stories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+    </header>
+    <div class="banner" id="banner" hidden></div>
+    <div class="scroller" id="listScroller">
+      <div class="ptr" id="ptr"><span>Pull to refresh</span></div>
+      <ol class="list" id="list"></ol>
+      <div class="list-foot" id="listFoot"></div>
+    </div>
+    <nav class="bar bottombar" aria-label="Sections"><div class="tabs" role="tablist" id="tabs"></div></nav>
+  </section>
+
+  <div id="spine" aria-hidden="true"></div>
+
+  <section class="pane" id="detailPane" aria-label="Story and comments">
+    <header class="bar topbar">
+      <div class="d-title-bar" id="dTitleBar"></div>
+      <button class="icon-btn" id="dRefreshBtn" aria-label="Reload comments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+    </header>
+    <div class="scroller" id="detailScroller"><div class="detail" id="detail"></div></div>
+    <button class="fab" id="nextBtn" aria-label="Jump to next thread" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+    <nav class="bar bottombar" aria-label="Story actions">
+      <a class="icon-btn" id="dArticle" target="_blank" rel="noopener noreferrer" aria-label="Open article"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+      <button class="icon-btn" id="dSave" aria-label="Save story" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+      <button class="icon-btn" id="dShare" aria-label="Share" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M8 7l4-4 4 4"/><path d="M5 12v7a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-7"/></svg></button>
+      <a class="icon-btn" id="dHN" target="_blank" rel="noopener noreferrer" aria-label="Open on Hacker News"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg></a>
+      <span style="flex:1"></span>
+      <button class="back-btn only-one" id="backBtn" aria-label="Back to stories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
+    </nav>
+  </section>
+</div>
+<div class="sheet-wrap" id="sheet" hidden></div>
+
+<script>window.FOLIO_CFG={serviceWorker:true,ownTheme:true};</script>
+<script>
+(() => {
+'use strict';
+const CFG = window.FOLIO_CFG || {};
+const DEMO = window.FOLIO_DEMO || null;
+const FB = 'https://hacker-news.firebaseio.com/v0';
+const AL = 'https://hn.algolia.com/api/v1';
+const PAGE = 30;
+
+const ICONS = {
+  top: '<path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/>',
+  new: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  best: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/>',
+  ask: '<path d="M4 5h16v11H9l-5 4z"/><path d="M10 9.2a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9"/><path d="M12 14h0"/>',
+  show: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  jobs: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  saved: '<path d="M6 3h12v18l-6-4-6 4z"/>',
+};
+const SECTIONS = [
+  { id: 'top', label: 'Top', feed: 'topstories' },
+  { id: 'new', label: 'New', feed: 'newstories' },
+  { id: 'best', label: 'Best', feed: 'beststories' },
+  { id: 'ask', label: 'Ask', feed: 'askstories' },
+  { id: 'show', label: 'Show', feed: 'showstories' },
+  { id: 'jobs', label: 'Jobs', feed: 'jobstories' },
+  { id: 'saved', label: 'Saved', feed: null },
+];
+
+/* ---------- storage (best effort) ---------- */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('folio:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('folio:' + k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
+};
+const settings = Object.assign({ text: 'm', layout: 'auto', theme: 'system', section: 'top' }, store.get('settings', {}));
+let seen = store.get('seen', {});     // story id -> comment count when last opened
+let saved = store.get('saved', []);   // minimal story objects, newest first
+const saveSettings = () => store.set('settings', settings);
+
+/* ---------- dom ---------- */
+const $ = (id) => document.getElementById(id);
+const app = $('app'), list = $('list'), listFoot = $('listFoot'), listScroller = $('listScroller');
+const detail = $('detail'), detailScroller = $('detailScroller'), detailPane = $('detailPane');
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  if (attrs) for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'text') el.textContent = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids) if (k != null) el.append(k);
+  return el;
+}
+const svg = (inner) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 24 24'); s.setAttribute('fill', 'none'); s.setAttribute('stroke', 'currentColor'); s.setAttribute('stroke-width', '2'); s.setAttribute('stroke-linecap', 'round'); s.setAttribute('stroke-linejoin', 'round'); s.innerHTML = inner; return s; };
+
+/* ---------- formatting ---------- */
+function ago(t) {
+  const s = Math.max(0, Date.now() / 1000 - t);
+  if (s < 60) return 'now';
+  if (s < 3600) return Math.floor(s / 60) + 'm';
+  if (s < 86400) return Math.floor(s / 3600) + 'h';
+  if (s < 86400 * 30) return Math.floor(s / 86400) + 'd';
+  return new Date(t * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function domain(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
+const hnUrl = (id) => 'https://news.ycombinator.com/item?id=' + id;
+
+/* HN text is HTML. Rebuild it from an allowlist so nothing but plain formatting and http(s) links survives. */
+const ALLOWED = new Set(['P', 'A', 'I', 'B', 'EM', 'STRONG', 'PRE', 'CODE', 'BR']);
+function sanitize(html) {
+  const frag = document.createDocumentFragment();
+  if (!html) return frag;
+  const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+  (function walk(src, dst) {
+    for (const n of Array.from(src.childNodes)) {
+      if (n.nodeType === 3) { dst.append(n.nodeValue); continue; }
+      if (n.nodeType !== 1 || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') continue;
+      if (!ALLOWED.has(n.tagName)) { walk(n, dst); continue; }
+      const el = document.createElement(n.tagName.toLowerCase());
+      if (n.tagName === 'A') {
+        const href = n.getAttribute('href') || '';
+        const m = href.match(/^https?:\/\/news\.ycombinator\.com\/item\?id=(\d+)/i);
+        if (m) el.href = '#item-' + m[1];
+        else if (/^https?:\/\//i.test(href)) { el.href = href; el.target = '_blank'; el.rel = 'noopener noreferrer'; }
+      }
+      walk(n, el);
+      dst.append(el);
+    }
+  })(doc.body.firstChild, frag);
+  // Mark ">" quote paragraphs so they read as quotes
+  return frag;
+}
+
+/* ---------- data ---------- */
+let demo = false;
+const itemCache = new Map();
+async function getJSON(url, ms = 12000) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: ctl.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+function enterDemo() {
+  if (demo || !DEMO) return;
+  demo = true;
+  itemCache.clear();
+  const b = $('banner');
+  b.textContent = DEMO.note || 'Showing a saved snapshot.';
+  b.hidden = false;
+}
+async function loadFeed(sec) {
+  if (sec.id === 'saved') return saved.map((s) => s.id);
+  if (!demo) {
+    try { return await getJSON(`${FB}/${sec.feed}.json`); }
+    catch (e) { if (!DEMO) throw e; enterDemo(); }
+  }
+  return DEMO.feeds[sec.id] || [];
+}
+function getItem(id, fresh) {
+  if (!fresh && itemCache.has(id)) return itemCache.get(id);
+  const p = demo
+    ? Promise.resolve((DEMO.items[id]) || saved.find((s) => s.id === id) || null)
+    : getJSON(`${FB}/item/${id}.json`).catch((e) => { itemCache.delete(id); throw e; });
+  itemCache.set(id, p);
+  return p;
+}
+function normAlgolia(n) {
+  return { id: n.id, by: n.author, time: n.created_at_i, text: n.text, kids: (n.children || []).map(normAlgolia) };
+}
+async function firebaseTree(ids, depth) {
+  if (!ids || !ids.length || depth > 10) return [];
+  const items = await Promise.all(ids.map((id) => getItem(id).catch(() => null)));
+  return Promise.all(items.filter(Boolean).map(async (c) => ({
+    id: c.id, by: c.by, time: c.time, text: c.deleted ? null : c.text, dead: c.dead,
+    kids: await firebaseTree(c.kids, depth + 1),
+  })));
+}
+async function getThread(story) {
+  if (demo) return ((DEMO.comments[story.id] || {}).kids) || [];
+  let kids;
+  try { kids = normAlgolia(await getJSON(`${AL}/items/${story.id}`, 15000)).kids; }
+  catch (e) { kids = await firebaseTree(story.kids, 0); }
+  // Algolia does not keep HN's ranking; the story's own kids list does.
+  if (story.kids && story.kids.length) {
+    const rank = new Map(story.kids.map((id, i) => [id, i]));
+    kids.sort((a, b) => (rank.has(a.id) ? rank.get(a.id) : 1e9) - (rank.has(b.id) ? rank.get(b.id) : 1e9));
+  }
+  return kids;
+}
+const prune = (cs) => cs.map((c) => ({ ...c, kids: prune(c.kids || []) })).filter((c) => c.text || c.kids.length);
+const countAll = (cs) => cs.reduce((n, c) => n + 1 + countAll(c.kids), 0);
+
+/* ---------- layout: one pane, or two pages split on the fold ---------- */
+let twoPane = false;
+function layout() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const segs = (window.viewport && window.viewport.segments) || null;
+  const sideBySide = segs && segs.length === 2 && segs[0].y === segs[1].y;
+  let two;
+  if (settings.layout === 'one') two = false;
+  else if (settings.layout === 'two') two = w >= 560;
+  else two = sideBySide || w >= 760;
+  let split = '50%', gap = 18;
+  if (two) {
+    if (sideBySide) {
+      const foldL = segs[0].x + segs[0].width, foldR = segs[1].x;
+      gap = Math.max(foldR - foldL, 18);
+      split = Math.round((foldL + foldR) / 2 - gap / 2) + 'px';
+    } else if (w > 1000 && w > h) {
+      split = Math.round(Math.min(Math.max(w * 0.36, 360), 460)) + 'px';
+      gap = 1;
+    } else {
+      split = Math.round(w / 2 - gap / 2) + 'px'; // a book-style foldable's crease runs down the middle
+    }
+  }
+  app.style.setProperty('--split', split);
+  app.style.setProperty('--gap', gap + 'px');
+  if (two !== twoPane || !app.classList.contains(two ? 'two' : 'one')) {
+    twoPane = two;
+    app.classList.toggle('two', two);
+    app.classList.toggle('one', !two);
+    detailPane.style.transform = '';
+    if (two && !current) showFirstStory();
+  }
+}
+
+/* ---------- story list ---------- */
+let section = SECTIONS.find((s) => s.id === settings.section) || SECTIONS[0];
+let ids = [], shown = 0, loading = false, listGen = 0;
+
+function renderTabs() {
+  const tabs = $('tabs');
+  tabs.textContent = '';
+  for (const s of SECTIONS) {
+    tabs.append(h('button', {
+      class: 'tab', role: 'tab', 'aria-selected': String(s === section), id: 'tab-' + s.id,
+      onclick: () => { if (s === section) { listScroller.scrollTo({ top: 0, behavior: 'smooth' }); return; } section = s; settings.section = s.id; saveSettings(); renderTabs(); loadList(); },
+    }, svg(ICONS[s.id]), s.label));
+  }
+  $('secLabel').textContent = section.label;
+}
+
+function storyRow(it, rank) {
+  const dom = domain(it.url);
+  const lastCount = seen[it.id];
+  const fresh = lastCount != null && it.descendants > lastCount ? it.descendants - lastCount : 0;
+  const meta = h('span', { class: 's-meta' },
+    dom ? h('span', { class: 'dom', text: dom }) : null,
+    it.type !== 'job' ? h('span', { text: (it.score || 0) + ' pts' }) : null,
+    it.type !== 'job' ? h('span', { text: (it.descendants || 0) + ' comments' }) : null,
+    fresh ? h('span', { class: 'new', text: '+' + fresh }) : null,
+    h('span', { text: ago(it.time) }),
+    it.by ? h('span', { text: it.by }) : null);
+  return h('li', { class: 'story' + (lastCount != null ? ' read' : '') + (current && current.id === it.id ? ' sel' : ''), 'data-id': it.id },
+    h('a', { class: 's-main', href: '#item-' + it.id },
+      h('span', { class: 's-rank', text: String(rank) }),
+      h('span', { class: 's-body' }, h('span', { class: 's-title', text: it.title || '(untitled)' }), meta)),
+    it.url ? h('a', { class: 's-open', href: it.url, target: '_blank', rel: 'noopener noreferrer', 'aria-label': 'Open article: ' + (it.title || '') }, svg('<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>')) : null);
+}
+
+async function loadList() {
+  const gen = ++listGen;
+  ids = []; shown = 0;
+  list.textContent = '';
+  listFoot.textContent = '';
+  for (let i = 0; i < 8; i++) list.append(h('li', { class: 'skel' }));
+  listScroller.scrollTop = 0;
+  $('refreshBtn').classList.add('spin');
+  try {
+    const got = await loadFeed(section);
+    if (gen !== listGen) return;
+    ids = got;
+    list.textContent = '';
+    if (!ids.length) {
+      listFoot.textContent = '';
+      listFoot.append(section.id === 'saved'
+        ? 'Stories you save show up here. Tap the bookmark at the bottom of a story to save it.'
+        : (demo ? 'This section is not in the saved snapshot.' : 'Nothing here right now.'));
+    } else await more();
+  } catch (e) {
+    if (gen !== listGen) return;
+    list.textContent = '';
+    listFoot.textContent = '';
+    listFoot.append(h('p', { text: 'Could not load stories. Check your connection.' }), h('button', { onclick: loadList, text: 'Try again' }));
+  } finally {
+    if (gen === listGen) $('refreshBtn').classList.remove('spin');
+  }
+}
+
+async function more() {
+  if (loading || shown >= ids.length) return;
+  loading = true;
+  const gen = listGen;
+  const slice = ids.slice(shown, shown + PAGE);
+  const start = shown;
+  shown += slice.length;
+  const items = await Promise.all(slice.map((id) => getItem(id).catch(() => null)));
+  loading = false;
+  if (gen !== listGen) return;
+  items.forEach((it, i) => { if (it && !it.deleted && !it.dead) list.append(storyRow(it, start + i + 1)); });
+  listFoot.textContent = shown < ids.length ? 'Loading more…' : (ids.length ? 'That’s everything in ' + section.label + '.' : '');
+  if (twoPane && !current) showFirstStory();
+  // keep filling if the first page did not reach the bottom
+  requestAnimationFrame(() => { if (listScroller.scrollHeight <= listScroller.clientHeight + 200) more(); });
+}
+listScroller.addEventListener('scroll', () => {
+  if (listScroller.scrollTop + listScroller.clientHeight > listScroller.scrollHeight - 600) more();
+}, { passive: true });
+
+/* pull to refresh */
+(() => {
+  const ptr = $('ptr');
+  let y0 = null, dy = 0;
+  listScroller.addEventListener('touchstart', (e) => { y0 = listScroller.scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
+  listScroller.addEventListener('touchmove', (e) => {
+    if (y0 == null) return;
+    dy = Math.max(0, e.touches[0].clientY - y0);
+    ptr.style.height = Math.min(dy * 0.5, 70) + 'px';
+    ptr.firstChild.textContent = dy * 0.5 > 56 ? 'Release to refresh' : 'Pull to refresh';
+  }, { passive: true });
+  listScroller.addEventListener('touchend', () => {
+    if (y0 != null && dy * 0.5 > 56) { itemCache.clear(); loadList(); }
+    y0 = null; ptr.style.height = '0';
+  });
+})();
+
+/* ---------- story detail ---------- */
+let current = null, detailGen = 0, topLevel = [];
+
+function updateSaveBtn() { $('dSave').setAttribute('aria-pressed', String(!!(current && saved.some((s) => s.id === current.id)))); }
+
+async function openStory(id, fresh) {
+  const gen = ++detailGen;
+  detail.textContent = '';
+  detail.append(h('div', { class: 'skel' }), h('div', { class: 'skel' }), h('div', { class: 'skel' }));
+  detailScroller.scrollTop = 0;
+  $('nextBtn').hidden = true;
+  $('dRefreshBtn').classList.add('spin');
+  let it;
+  try { it = await getItem(id, fresh); } catch (e) { it = null; }
+  if (gen !== detailGen) return;
+  if (!it) {
+    $('dRefreshBtn').classList.remove('spin');
+    detail.textContent = '';
+    detail.append(h('div', { class: 'empty' }, h('p', { text: 'Could not load this story.' }), h('button', { onclick: () => openStory(id, true), text: 'Try again' })));
+    return;
+  }
+  current = it;
+  for (const li of list.querySelectorAll('.story')) li.classList.toggle('sel', +li.dataset.id === it.id);
+  const title = it.title || ('Comment by ' + (it.by || 'unknown'));
+  $('dTitleBar').textContent = title;
+  const art = $('dArticle');
+  if (it.url) { art.href = it.url; art.removeAttribute('aria-disabled'); art.style.opacity = ''; }
+  else { art.removeAttribute('href'); art.setAttribute('aria-disabled', 'true'); art.style.opacity = '.35'; }
+  $('dHN').href = hnUrl(it.id);
+  updateSaveBtn();
+
+  const dom = domain(it.url);
+  const head = h('div', { class: 'd-head' },
+    h('h1', null, it.url ? h('a', { href: it.url, target: '_blank', rel: 'noopener noreferrer', text: title }) : title),
+    h('div', { class: 'd-meta' },
+      dom ? h('span', { class: 'dom', text: dom }) : null,
+      it.score != null && it.type !== 'job' ? h('span', { text: it.score + ' points' }) : null,
+      it.by ? h('span', { text: 'by ' + it.by }) : null,
+      h('span', { text: ago(it.time) + ' ago' })),
+    it.text ? h('div', { class: 'd-text' }, sanitize(it.text)) : null,
+    h('div', { class: 'd-actions' },
+      it.url ? h('a', { class: 'pill primary', href: it.url, target: '_blank', rel: 'noopener noreferrer' }, svg('<path d="M4 5h11a5 5 0 0 1 5 5v9H9a5 5 0 0 1-5-5z"/><path d="M8 10h8M8 14h5"/>'), 'Read article') : null,
+      h('a', { class: 'pill', href: hnUrl(it.id), target: '_blank', rel: 'noopener noreferrer', text: 'Reply on HN' })));
+  const countEl = h('div', { class: 'd-count', text: 'Loading comments…' });
+  const thread = h('div', { class: 'thread' });
+  detail.textContent = '';
+  detail.append(head, countEl, thread);
+
+  if (!it.kids || !it.kids.length) {
+    $('dRefreshBtn').classList.remove('spin');
+    countEl.textContent = it.type === 'job' ? '' : (demo && it.descendants ? it.descendants + ' comments \u00b7 not in this snapshot' : 'No comments yet');
+    markSeen(it, 0);
+    return;
+  }
+  let kids;
+  try { kids = prune(await getThread(it)); } catch (e) { kids = null; }
+  if (gen !== detailGen) return;
+  $('dRefreshBtn').classList.remove('spin');
+  if (!kids) {
+    countEl.textContent = '';
+    thread.append(h('div', { class: 'empty' }, h('p', { text: 'Could not load comments.' }), h('button', { onclick: () => openStory(id, true), text: 'Try again' })));
+    return;
+  }
+  const total = countAll(kids);
+  const known = it.descendants || total;
+  countEl.textContent = known === 1 ? '1 comment' : known + ' comments';
+  if (demo && total < known) countEl.textContent += ' · ' + total + ' in this snapshot';
+  markSeen(it, it.descendants != null ? it.descendants : total);
+  topLevel = [];
+  renderThreads(kids, thread, it.by, gen);
+}
+
+function markSeen(it, n) {
+  seen[it.id] = n;
+  const keys = Object.keys(seen);
+  if (keys.length > 600) for (const k of keys.slice(0, keys.length - 500)) delete seen[k];
+  store.set('seen', seen);
+  const li = list.querySelector('.story[data-id="' + it.id + '"]');
+  if (li) { li.classList.add('read'); const nb = li.querySelector('.new'); if (nb) nb.remove(); }
+}
+
+function renderComment(c, depth, op) {
+  const kids = c.kids || [];
+  const hidden = countAll(kids);
+  const el = h('div', { class: 'c' + (c.text ? '' : ' dead'), 'data-depth': String(Math.min(depth, 7)), id: 'c-' + c.id });
+  const head = h('button', { class: 'c-head', 'aria-expanded': 'true' },
+    h('span', { class: 'by', text: c.by || '[deleted]' }),
+    c.by && c.by === op ? h('span', { class: 'op', text: 'OP' }) : null,
+    h('span', { text: c.time ? ago(c.time) : '' }),
+    h('span', { class: 'fold', text: hidden ? String(hidden + 1) : '–' }));
+  head.addEventListener('click', () => {
+    const folded = el.classList.toggle('folded');
+    head.setAttribute('aria-expanded', String(!folded));
+    // keep the folded comment's header in view so the thumb stays in place
+    if (folded) { const r = el.getBoundingClientRect(), s = detailScroller.getBoundingClientRect(); if (r.top < s.top) detailScroller.scrollTop += r.top - s.top - 8; }
+  });
+  const body = h('div', { class: 'c-body' }, h('div', { class: 'c-text' }, c.text ? sanitize(c.text) : '[deleted]'));
+  if (kids.length) {
+    const k = h('div', { class: 'c-kids' });
+    for (const ch of kids) k.append(renderComment(ch, depth + 1, op));
+    body.append(k);
+  }
+  el.append(head, body);
+  return el;
+}
+
+function renderThreads(kids, into, op, gen) {
+  let i = 0;
+  const step = () => {
+    if (gen !== detailGen) return;
+    const frag = document.createDocumentFragment();
+    const end = Math.min(i + 20, kids.length);
+    for (; i < end; i++) { const el = renderComment(kids[i], 0, op); topLevel.push(el); frag.append(el); }
+    into.append(frag);
+    $('nextBtn').hidden = topLevel.length < 2;
+    if (i < kids.length) {
+      const more = h('div', { class: 'more' });
+      into.append(more);
+      const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { io.disconnect(); more.remove(); step(); } }, { root: detailScroller, rootMargin: '800px' });
+      io.observe(more);
+    }
+  };
+  step();
+}
+
+$('nextBtn').addEventListener('click', () => {
+  const top = detailScroller.getBoundingClientRect().top;
+  const next = topLevel.find((el) => el.getBoundingClientRect().top > top + 12);
+  if (next) detailScroller.scrollTo({ top: detailScroller.scrollTop + next.getBoundingClientRect().top - top - 8, behavior: 'smooth' });
+});
+$('dRefreshBtn').addEventListener('click', () => { if (current) openStory(current.id, true); });
+$('dSave').addEventListener('click', () => {
+  if (!current) return;
+  const i = saved.findIndex((s) => s.id === current.id);
+  if (i >= 0) saved.splice(i, 1);
+  else saved.unshift({ id: current.id, title: current.title, url: current.url, by: current.by, time: current.time, score: current.score, descendants: current.descendants, kids: current.kids, type: current.type, text: current.text });
+  store.set('saved', saved);
+  updateSaveBtn();
+  if (section.id === 'saved') loadList();
+});
+if (navigator.share) {
+  const sb = $('dShare');
+  sb.hidden = false;
+  sb.addEventListener('click', () => {
+    if (!current) return;
+    navigator.share({ title: current.title, url: current.url || hnUrl(current.id) }).catch(() => {});
+  });
+}
+
+async function showFirstStory() {
+  if (current || !twoPane) return;
+  const first = list.querySelector('.story');
+  if (first) openStory(+first.dataset.id);
+  else showEmptyDetail();
+}
+function showEmptyDetail() {
+  detail.textContent = '';
+  detail.append(h('div', { class: 'empty' }, svg('<path d="M3 5.5c3-1 6-1 8 .8v13c-2-1.8-5-1.8-8-.8z"/><path d="M21 5.5c-3-1-6-1-8 .8v13c2-1.8 5-1.8 8-.8z"/>'), h('p', { text: 'Pick a story to read its comments here.' })));
+}
+
+/* ---------- navigation: the hash names the open story ---------- */
+let pushedByUs = 0;
+function route() {
+  const m = location.hash.match(/^#item-(\d+)$/);
+  if (m) {
+    app.classList.add('reading');
+    if (!current || current.id !== +m[1]) openStory(+m[1]);
+  } else {
+    app.classList.remove('reading');
+    if (!twoPane) { current = null; detailGen++; for (const li of list.querySelectorAll('.story.sel')) li.classList.remove('sel'); }
+  }
+}
+window.addEventListener('hashchange', route);
+list.addEventListener('click', (e) => { if (e.target.closest('.s-main')) pushedByUs++; });
+function goBack() {
+  if (pushedByUs > 0) { pushedByUs--; history.back(); }
+  else location.hash = '';
+}
+$('backBtn').addEventListener('click', goBack);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !twoPane && app.classList.contains('reading')) goBack(); });
+
+/* swipe right anywhere on the story to go back (one pane only) */
+(() => {
+  let x0 = null, y0 = 0, dx = 0, lock = null;
+  detailPane.addEventListener('touchstart', (e) => {
+    if (twoPane || !app.classList.contains('reading')) return;
+    const t = e.touches[0];
+    if (e.target.closest('pre')) { x0 = null; return; } // let code blocks scroll sideways
+    x0 = t.clientX; y0 = t.clientY; dx = 0; lock = null;
+  }, { passive: true });
+  detailPane.addEventListener('touchmove', (e) => {
+    if (x0 == null) return;
+    const t = e.touches[0];
+    const mx = t.clientX - x0, my = t.clientY - y0;
+    if (lock == null && (Math.abs(mx) > 10 || Math.abs(my) > 10)) lock = Math.abs(mx) > Math.abs(my) * 1.4 && mx > 0 ? 'x' : 'y';
+    if (lock !== 'x') return;
+    dx = Math.max(0, mx);
+    detailPane.classList.add('dragging');
+    detailPane.style.transform = `translateX(${dx}px)`;
+  }, { passive: true });
+  const end = () => {
+    if (x0 == null) return;
+    x0 = null;
+    detailPane.classList.remove('dragging');
+    detailPane.style.transform = '';
+    if (lock === 'x' && dx > Math.min(110, window.innerWidth * 0.25)) goBack();
+  };
+  detailPane.addEventListener('touchend', end);
+  detailPane.addEventListener('touchcancel', end);
+})();
+
+/* ---------- settings ---------- */
+const TEXT = { s: 0.9, m: 1, l: 1.12, xl: 1.25 };
+function applySettings() {
+  document.documentElement.style.setProperty('--fs', TEXT[settings.text] || 1);
+  if (CFG.ownTheme) {
+    if (settings.theme === 'system') document.documentElement.removeAttribute('data-theme');
+    else document.documentElement.setAttribute('data-theme', settings.theme);
+  }
+}
+function seg(label, key, opts, note) {
+  const row = h('div', { class: 'row' }, h('span', { text: label }));
+  const box = h('div', { class: 'seg', role: 'group', 'aria-label': label });
+  for (const [v, l] of opts) {
+    box.append(h('button', {
+      'aria-pressed': String(settings[key] === v), text: l,
+      onclick: (e) => { settings[key] = v; saveSettings(); applySettings(); layout(); for (const b of box.children) b.setAttribute('aria-pressed', String(b === e.currentTarget)); },
+    }));
+  }
+  row.append(box);
+  if (note) row.append(h('p', { class: 'note', text: note }));
+  return row;
+}
+function openSettings() {
+  const sheet = $('sheet');
+  sheet.textContent = '';
+  const panel = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Settings' },
+    h('h2', { text: 'Settings' }),
+    seg('Text size', 'text', [['s', 'S'], ['m', 'M'], ['l', 'L'], ['xl', 'XL']]),
+    seg('Layout', 'layout', [['auto', 'Auto'], ['one', 'One page'], ['two', 'Two pages']], 'Auto shows two pages, split on the fold, when a foldable is open.'),
+    CFG.ownTheme ? seg('Appearance', 'theme', [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']]) : null,
+    h('button', { class: 'link', text: 'Clear read history', onclick: (e) => { seen = {}; store.set('seen', seen); for (const li of list.querySelectorAll('.story.read')) li.classList.remove('read'); e.currentTarget.textContent = 'Read history cleared'; } }),
+    h('button', { class: 'done', text: 'Done', onclick: closeSettings }));
+  sheet.append(panel);
+  sheet.hidden = false;
+  panel.querySelector('button').focus();
+}
+function closeSettings() { $('sheet').hidden = true; $('settingsBtn').focus(); }
+$('sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSettings(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').hidden) closeSettings(); });
+$('settingsBtn').addEventListener('click', openSettings);
+$('refreshBtn').addEventListener('click', () => { itemCache.clear(); loadList(); });
+
+/* ---------- start ---------- */
+applySettings();
+renderTabs();
+layout();
+window.addEventListener('resize', layout);
+if (window.viewport && window.viewport.addEventListener) { try { window.viewport.addEventListener('segmentschange', layout); } catch (e) { /* not supported */ } }
+if (!/^#item-\d+$/.test(location.hash)) showEmptyDetail();
+loadList();
+route();
+if (CFG.serviceWorker && 'serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
