@@ -1,4 +1,4 @@
-# Folio
+# Hacker News
 
 A small, installable Hacker News reader built as a single-page web app.
 
@@ -9,7 +9,7 @@ A small, installable Hacker News reader built as a single-page web app.
 - Threaded comments that collapse with a tap, with a button to jump to the next top-level thread
 - Navigation at the bottom of the screen for one-handed use, with Back on the right and swipe right to go back
 - Two-pane layout on wide screens and unfolded foldables, with the split aligned to the fold (uses the Viewport Segments API where the browser supports it)
-- Light and dark themes that follow the system, plus adjustable text size
+- Light theme by default, an optional night mode, and adjustable text size
 - Read tracking with a count of new comments since your last visit
 - Offline support through a service worker that caches the app and recently loaded stories
 - Installable as a home screen app (web app manifest and icons)
