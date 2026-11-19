@@ -95,21 +95,36 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) { #app.one #detailPane { transition: none; } }
 
 .bar { flex: none; display: flex; align-items: center; gap: 0; background: var(--surface); border-color: var(--line); border-style: solid; border-width: 0; }
-.topbar { background: var(--bar); color: var(--bar-ink); border-width: 0; height: calc(45px + var(--sat)); padding: var(--sat) calc(4px + var(--sar-l)) 0 calc(11px + var(--sal-l)); }
+.topbar { background: var(--bar); color: var(--bar-ink); border-width: 0; height: calc(45px + var(--sat)); padding: var(--sat) var(--sar-l) 0 calc(11px + var(--sal-l)); }
 .bottombar { border-top-width: 1px; padding: 0 calc(6px + var(--sar-l)) var(--sab) calc(6px + var(--sal-l)); }
-#app.two #listPane .topbar, #app.two #listPane .bottombar { padding-right: 4px; }
+#app.two #listPane .topbar { padding-right: 0; }
+#app.two #listPane .bottombar { padding-right: 4px; }
 #app.two #detailPane .topbar { padding-left: 11px; }
 #app.two #detailPane .bottombar { padding-left: 6px; }
 
 .brand { display: flex; align-items: center; gap: 22px; margin-right: auto; min-width: 0; color: var(--bar-ink); }
 .menu-btn { display: grid; place-items: center; width: 22px; height: 45px; color: inherit; flex: none; }
-.menu-btn svg { width: 22px; height: 22px; }
+.menu-btn svg { width: 22.3px; height: 22.3px; margin-top: 1px; }
 .brand-txt { display: flex; flex-direction: column; min-width: 0; }
 .brand-txt b { font-weight: 400; font-size: .9375rem; line-height: 1.125rem; }
 .brand-txt small { font-weight: 300; color: var(--bar-ink-soft); font-size: .75rem; line-height: 1rem; margin-top: 1px; }
 .icon-btn { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 4px; color: var(--muted); flex: none; text-decoration: none; }
 .icon-btn:active { background: var(--accent-soft); }
-.topbar .icon-btn { color: var(--bar-ink); width: 40px; height: 45px; }
+.topbar .icon-btn { color: var(--bar-ink); width: 48px; height: 45px; border-radius: 0; }
+.topbar .icon-btn svg.i-search { width: 16px; height: 16px; }
+.topbar .icon-btn svg.i-refresh { width: 20px; height: 20px; }
+.topbar .icon-btn svg.i-dots { width: 4px; height: 15px; }
+.topbar .icon-btn svg.i-paper { width: 22px; height: 18px; }
+.topbar .icon-btn[aria-disabled="true"] { opacity: .35; }
+.search-form { flex: 1; min-width: 0; margin-right: 6px; }
+.search-form input { width: 100%; height: 30px; border: 0; border-radius: 3px; padding: 0 8px; font: inherit; font-size: 1rem; color: var(--fg); background: rgba(255,255,255,.92); outline: none; -webkit-appearance: none; appearance: none; }
+.brand.searching .brand-txt { display: none; }
+.brand.searching { flex: 1; margin-right: 0; }
+.sec-list { display: grid; }
+.sec-list button { display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 0 4px; text-align: left; font-size: 1rem; color: var(--fg); border-bottom: var(--hair) solid var(--line); }
+.sec-list button svg { width: 20px; height: 20px; color: var(--muted); }
+.sec-list button[aria-current="true"] { color: var(--accent); }
+.sec-list button[aria-current="true"] svg { color: var(--accent); }
 .topbar .icon-btn:active { background: rgba(255,255,255,.15); }
 .icon-btn svg { width: 22px; height: 22px; }
 .topbar .icon-btn svg { width: 19px; height: 19px; }
@@ -136,11 +151,11 @@ a { color: inherit; }
 .list { list-style: none; margin: 0; padding: 0; }
 .story { position: relative; border-bottom: var(--hair) solid var(--line); background: var(--surface); }
 .story.sel { background: var(--accent-soft); }
-.s-left { min-width: 0; padding: 9px calc(76px + var(--sar-l)) 11px calc(15px + var(--sal-l)); }
+.s-left { min-width: 0; padding: 10px calc(76px + var(--sar-l)) 11px calc(15px + var(--sal-l)); }
 #app.two .s-left { padding-left: 15px; padding-right: 76px; }
 .s-main { display: block; text-decoration: none; color: inherit; }
 .s-title { display: block; font-size: 1rem; line-height: 1.3125rem; font-weight: 400; color: var(--fg); overflow-wrap: anywhere; }
-.s-meta { display: block; margin-top: 8px; font-size: .8rem; font-weight: 300; line-height: 1.25rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s-meta { display: block; margin-top: 7px; font-size: .8rem; font-weight: 300; line-height: 1.25rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .s-meta span + span { margin-left: 10px; }
 .s-meta .new { color: var(--accent); }
 .s-url { display: block; font-size: .8rem; font-weight: 300; line-height: 1.25rem; color: var(--url); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -148,7 +163,7 @@ a { color: inherit; }
 .s-side { position: absolute; top: 0; bottom: 0; right: var(--sar-l); width: 50px; background: var(--side); text-decoration: none; }
 #app.two .s-side { right: 0; }
 .story.sel .s-side { background: transparent; }
-.bubble { position: absolute; top: 13px; left: 50%; transform: translateX(-50%); min-width: 37px; height: 21px; padding: 0 7px; box-sizing: border-box; border-radius: 50%; background: var(--bubble-bg); color: var(--bubble-fg); font-size: .84375rem; line-height: 21px; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bubble { position: absolute; top: 13px; left: 50%; transform: translateX(-50%); min-width: 37px; height: 23px; padding: 0 7px; box-sizing: border-box; border-radius: 50%; background: var(--bubble-bg); color: var(--bubble-fg); font-size: .84375rem; line-height: 23px; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bubble::after { content: ""; position: absolute; left: 7px; top: 100%; margin-top: -1px; border-style: solid; border-width: 7px 7px 0 0; border-color: var(--bubble-bg) transparent transparent transparent; }
 .cbox { position: absolute; left: 0; right: 0; bottom: 11px; height: 19px; background: var(--box-bg); color: var(--box-fg); font-size: .75rem; font-weight: 300; line-height: 19px; text-align: center; font-variant-numeric: tabular-nums; }
 .story.read .bubble, .story.read .cbox { opacity: .5; }
@@ -162,11 +177,11 @@ a { color: inherit; }
 .d-title-bar { flex: 1; min-width: 0; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .detail { padding: 0 0 5.5rem; }
 .d-top { border-bottom: 5px solid var(--head-rule); }
-.d-head { background: var(--head-bg); padding: 8px calc(16px + var(--sar-l)) 8px calc(15px + var(--sal-l)); border-bottom: var(--hair) solid var(--accent); }
+.d-head { background: var(--head-bg); padding: 9px calc(16px + var(--sar-l)) 9px calc(15px + var(--sal-l)); }
 #app.two .d-head { padding-left: 15px; padding-right: 16px; }
-.d-head h1 { margin: 0; font-size: 1rem; line-height: 1.4rem; font-weight: 400; color: var(--head-title); overflow-wrap: anywhere; }
+.d-head h1 { margin: 0; font-size: 1rem; line-height: 1.3125rem; font-weight: 400; color: var(--head-title); overflow-wrap: anywhere; }
 .d-head h1 a { text-decoration: none; color: inherit; }
-.d-meta { margin-top: 7px; font-weight: 300; display: flex; flex-wrap: wrap; align-items: center; font-size: .84375rem; line-height: 24px; color: var(--head-meta); font-variant-numeric: tabular-nums; }
+.d-meta { margin-top: 8px; font-weight: 300; display: flex; flex-wrap: wrap; align-items: center; font-size: .84375rem; line-height: 24px; color: var(--head-meta); font-variant-numeric: tabular-nums; }
 .d-meta > * { margin-right: 14px; }
 .d-meta .hbox { margin-right: 8px; padding: 0 6px; min-width: 37px; border-radius: 2px; font-size: .8125rem; box-sizing: border-box; text-align: center; background: var(--head-box); }
 .d-meta .pts { display: inline-flex; align-items: center; gap: 5px; margin-left: -5px; }
@@ -187,12 +202,12 @@ a { color: inherit; }
 /* ---------- comments ---------- */
 .c { border-top: var(--hair) solid var(--cline); }
 .c-kids { margin-left: 1px; border-left: 14px solid var(--gutter); }
-.c-top { display: flex; align-items: center; height: 2.5rem; padding: 0 calc(16px + var(--sar-l)) 0 calc(16px + var(--sal-l)); }
+.c-top { display: flex; align-items: center; height: 37px; padding: 0 calc(16px + var(--sar-l)) 0 calc(16px + var(--sal-l)); }
 #app.two .c-top { padding-left: 16px; padding-right: 16px; }
 .c-kids .c-top, #app.two .c-kids .c-top { padding-left: 16px; }
-.c-reply { flex: none; display: grid; place-items: center; height: 2.5rem; padding-right: 30px; color: var(--reply); }
+.c-reply { flex: none; display: grid; place-items: center; height: 37px; padding-right: 30px; color: var(--reply); }
 .c-reply svg { width: 10px; height: 10px; }
-.c-head { flex: 1; min-width: 0; display: flex; align-items: center; height: 2.5rem; text-align: left; font-size: .9375rem; color: var(--age); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.c-head { flex: 1; min-width: 0; display: flex; align-items: center; height: 37px; text-align: left; font-size: .9375rem; color: var(--age); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .c-head .by, .c-head .when { display: inline-flex; align-items: center; }
 .c-head .by { color: var(--accent); gap: 5px; margin-right: 30px; }
 .c-head .when { gap: 7px; }
@@ -201,7 +216,7 @@ a { color: inherit; }
 .c-head .op { font-size: .6875rem; font-weight: 600; letter-spacing: .04em; color: var(--accent-ink); background: var(--accent); padding: 0 4px; border-radius: 2px; margin: 0 22px 0 -22px; line-height: 16px; }
 .c-head .fold { display: none; margin-left: auto; color: var(--muted); }
 .c.folded > .c-top .fold { display: inline; }
-.c-text { font-size: .9375rem; line-height: 1.62; color: var(--fg); overflow-wrap: anywhere; padding: 0 calc(16px + var(--sar-l)) 20px calc(16px + var(--sal-l)); }
+.c-text { font-size: .9375rem; line-height: 1.62; color: var(--fg); overflow-wrap: anywhere; padding: 4px calc(16px + var(--sar-l)) 20px calc(16px + var(--sal-l)); }
 #app.two .c-text { padding-left: 16px; padding-right: 16px; }
 .c-kids .c-text, #app.two .c-kids .c-text { padding-left: 16px; }
 .c-text p, .d-text p { margin: 10px 0 0; }
@@ -243,10 +258,13 @@ a { color: inherit; }
   <section class="pane" id="listPane" aria-label="Stories">
     <header class="bar topbar">
       <div class="brand">
-        <button class="menu-btn" id="settingsBtn" aria-label="Settings"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="1" y="3" width="22" height="2.6" rx="1"/><rect x="1" y="9.5" width="22" height="2.6" rx="1"/><rect x="1" y="16" width="22" height="2.6" rx="1"/><circle cx="3.5" cy="22" r="1.3"/><circle cx="8" cy="22" r="1.3"/><circle cx="12.5" cy="22" r="1.3"/></svg></button>
-        <span class="brand-txt"><b>Hacker News</b><small id="secLabel">Frontpage</small></span>
+        <button class="menu-btn" id="menuBtn" aria-label="Sections"><svg viewBox="0 0 67 67" fill="currentColor" aria-hidden="true"><rect x="0" y="0" width="67" height="9"/><rect x="0" y="17" width="41" height="8.5"/><rect x="0" y="34" width="67" height="8.5"/><circle cx="4.2" cy="63" r="4"/><circle cx="20.5" cy="63" r="4"/><circle cx="36.8" cy="63" r="4"/></svg></button>
+        <span class="brand-txt" id="brandTxt"><b>Hacker News</b><small id="secLabel">Frontpage</small></span>
+        <form class="search-form" id="searchForm" role="search" hidden><input type="search" id="searchInput" placeholder="Search stories" aria-label="Search stories" enterkeyhint="search" autocomplete="off"></form>
       </div>
-      <button class="icon-btn" id="refreshBtn" aria-label="Refresh stories"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+      <button class="icon-btn" id="searchBtn" aria-label="Search"><svg class="i-search" viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="6.4" cy="6.4" r="5.2" stroke-width="2.2"/><path d="M10.2 10.2L15 15" stroke-width="2.4"/></svg></button>
+      <button class="icon-btn" id="refreshBtn" aria-label="Refresh stories"><svg class="i-refresh" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4.4 11A7.7 7.7 0 0 1 17.2 6.5"/><path d="M19.6 13A7.7 7.7 0 0 1 6.8 17.5"/></g><g fill="currentColor"><path d="M20.6 2.8V10.4L13.4 9.3Z"/><path d="M3.4 21.2V13.6L10.6 14.7Z"/></g></svg></button>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings"><svg class="i-dots" viewBox="0 0 4 15" fill="currentColor" aria-hidden="true"><circle cx="2" cy="1.75" r="1.7"/><circle cx="2" cy="7.5" r="1.7"/><circle cx="2" cy="13.25" r="1.7"/></svg></button>
     </header>
     <div class="banner" id="banner" hidden></div>
     <div class="scroller" id="listScroller">
@@ -262,7 +280,9 @@ a { color: inherit; }
   <section class="pane" id="detailPane" aria-label="Story and comments">
     <header class="bar topbar">
       <div class="d-title-bar" id="dTitleBar"></div>
-      <button class="icon-btn" id="dRefreshBtn" aria-label="Reload comments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+      <button class="icon-btn" id="dRefreshBtn" aria-label="Reload comments"><svg class="i-refresh" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.3"><path d="M4.4 11A7.7 7.7 0 0 1 17.2 6.5"/><path d="M19.6 13A7.7 7.7 0 0 1 6.8 17.5"/></g><g fill="currentColor"><path d="M20.6 2.8V10.4L13.4 9.3Z"/><path d="M3.4 21.2V13.6L10.6 14.7Z"/></g></svg></button>
+      <a class="icon-btn" id="dReader" target="_blank" rel="noopener noreferrer" aria-label="Open article"><svg class="i-paper" viewBox="0 0 22 18" aria-hidden="true"><rect x="1" y="1" width="20" height="16" rx="1" fill="none" stroke="currentColor" stroke-width="1.6"/><g fill="currentColor"><rect x="1" y="1" width="20" height="3"/><rect x="4" y="6.5" width="7" height="5"/><rect x="12.5" y="6.5" width="5.5" height="1.4"/><rect x="12.5" y="9.3" width="5.5" height="1.4"/><rect x="4" y="12.6" width="14" height="1.4"/></g></svg></a>
+      <button class="icon-btn" id="dSettingsBtn" aria-label="Settings"><svg class="i-dots" viewBox="0 0 4 15" fill="currentColor" aria-hidden="true"><circle cx="2" cy="1.75" r="1.7"/><circle cx="2" cy="7.5" r="1.7"/><circle cx="2" cy="13.25" r="1.7"/></svg></button>
     </header>
     <div class="scroller" id="detailScroller"><div class="detail" id="detail"></div></div>
     <button class="fab" id="nextBtn" aria-label="Jump to next thread" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
@@ -489,10 +509,54 @@ function renderTabs() {
   for (const s of SECTIONS) {
     tabs.append(h('button', {
       class: 'tab', role: 'tab', 'aria-selected': String(s === section), id: 'tab-' + s.id,
-      onclick: () => { if (s === section) { listScroller.scrollTo({ top: 0, behavior: 'smooth' }); return; } section = s; settings.section = s.id; saveSettings(); renderTabs(); loadList(); },
+      onclick: () => pickSection(s),
     }, svg(ICONS[s.id]), s.label));
   }
   $('secLabel').textContent = section.title || section.label;
+}
+function pickSection(s) {
+  const wasSearch = !!searchQ;
+  if (wasSearch) endSearch(false);
+  if (s === section && !wasSearch) { listScroller.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  section = s; settings.section = s.id; saveSettings(); renderTabs(); loadList();
+}
+
+/* search, through the Algolia HN Search API */
+let searchQ = '';
+function startSearch() {
+  $('listPane').querySelector('.brand').classList.add('searching');
+  $('searchForm').hidden = false;
+  $('searchInput').focus();
+}
+function endSearch(reload) {
+  const had = !!searchQ;
+  searchQ = '';
+  $('searchInput').value = '';
+  $('searchForm').hidden = true;
+  $('listPane').querySelector('.brand').classList.remove('searching');
+  if (reload && had) loadList();
+}
+async function searchIds(q) {
+  if (demo || (!navigator.onLine && DEMO)) {
+    const ql = q.toLowerCase();
+    return Object.values(DEMO.items).filter((it) => it && it.title && it.title.toLowerCase().includes(ql)).map((it) => it.id);
+  }
+  try {
+    const r = await getJSON(`${AL}/search?tags=story&hitsPerPage=50&query=${encodeURIComponent(q)}`);
+    const out = [];
+    for (const hit of r.hits || []) {
+      const id = Number(hit.objectID);
+      if (!id) continue;
+      const it = { id, type: 'story', title: hit.title || '', url: hit.url || undefined, by: hit.author, time: hit.created_at_i, score: hit.points || 0, descendants: hit.num_comments || 0, text: hit.story_text || undefined };
+      if (!itemCache.has(id)) itemCache.set(id, Promise.resolve(it));
+      out.push(id);
+    }
+    return out;
+  } catch (e) {
+    if (!DEMO) throw e;
+    enterDemo();
+    return searchIds(q);
+  }
 }
 
 function storyRow(it) {
@@ -522,13 +586,13 @@ async function loadList() {
   listScroller.scrollTop = 0;
   $('refreshBtn').classList.add('spin');
   try {
-    const got = await loadFeed(section);
+    const got = searchQ ? await searchIds(searchQ) : await loadFeed(section);
     if (gen !== listGen) return;
     ids = got;
     list.textContent = '';
     if (!ids.length) {
       listFoot.textContent = '';
-      listFoot.append(section.id === 'saved'
+      listFoot.append(searchQ ? 'No stories match “' + searchQ + '”.' : section.id === 'saved'
         ? 'Stories you save show up here. Tap the bookmark at the bottom of a story to save it.'
         : (demo ? 'This section is not in the saved snapshot.' : 'Nothing here right now.'));
     } else await more();
@@ -553,7 +617,7 @@ async function more() {
   loading = false;
   if (gen !== listGen) return;
   items.forEach((it, i) => { if (it && !it.deleted && !it.dead) list.append(storyRow(it, start + i + 1)); });
-  listFoot.textContent = shown < ids.length ? 'Loading more…' : (ids.length ? 'That’s everything in ' + section.label + '.' : '');
+  listFoot.textContent = shown < ids.length ? 'Loading more…' : (ids.length ? (searchQ ? 'That’s every match.' : 'That’s everything in ' + section.label + '.') : '');
   if (twoPane && !current) showFirstStory();
   // keep filling if the first page did not reach the bottom
   requestAnimationFrame(() => { if (listScroller.scrollHeight <= listScroller.clientHeight + 200) more(); });
@@ -605,8 +669,10 @@ async function openStory(id, fresh) {
   const title = it.title || ('Comment by ' + (it.by || 'unknown'));
   $('dTitleBar').textContent = title;
   const art = $('dArticle');
-  if (it.url) { art.href = it.url; art.removeAttribute('aria-disabled'); art.style.opacity = ''; }
-  else { art.removeAttribute('href'); art.setAttribute('aria-disabled', 'true'); art.style.opacity = '.35'; }
+  for (const a of [art, $('dReader')]) {
+    if (it.url) { a.href = it.url; a.removeAttribute('aria-disabled'); a.style.opacity = ''; }
+    else { a.removeAttribute('href'); a.setAttribute('aria-disabled', 'true'); a.style.opacity = '.35'; }
+  }
   $('dHN').href = hnUrl(it.id);
   updateSaveBtn();
 
@@ -825,10 +891,40 @@ function openSettings() {
   sheet.hidden = false;
   panel.querySelector('button').focus();
 }
-function closeSettings() { $('sheet').hidden = true; $('settingsBtn').focus(); }
+let sheetReturn = null;
+function closeSettings() { $('sheet').hidden = true; (sheetReturn || $('settingsBtn')).focus(); sheetReturn = null; }
+function openSections() {
+  const sheet = $('sheet');
+  sheet.textContent = '';
+  const panel = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Sections' },
+    h('h2', { text: 'Hacker News' }),
+    h('div', { class: 'sec-list' }, ...SECTIONS.map((s) => h('button', {
+      'aria-current': String(s === section && !searchQ),
+      onclick: () => { closeSettings(); pickSection(s); },
+    }, svg(ICONS[s.id]), s.title || s.label))));
+  sheet.append(panel);
+  sheet.hidden = false;
+  sheetReturn = $('menuBtn');
+  panel.querySelector('button').focus();
+}
 $('sheet').addEventListener('click', (e) => { if (e.target.id === 'sheet') closeSettings(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').hidden) closeSettings(); });
-$('settingsBtn').addEventListener('click', openSettings);
+$('settingsBtn').addEventListener('click', () => { openSettings(); sheetReturn = $('settingsBtn'); });
+$('dSettingsBtn').addEventListener('click', () => { openSettings(); sheetReturn = $('dSettingsBtn'); });
+$('menuBtn').addEventListener('click', openSections);
+$('searchBtn').addEventListener('click', () => {
+  const q = $('searchInput').value.trim();
+  if ($('searchForm').hidden) startSearch();
+  else if (q && q !== searchQ) { searchQ = q; $('searchInput').blur(); loadList(); }
+  else endSearch(true);
+});
+$('searchForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = $('searchInput').value.trim();
+  if (!q) { endSearch(true); return; }
+  searchQ = q; $('searchInput').blur(); loadList();
+});
+$('searchInput').addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); endSearch(true); } });
 $('refreshBtn').addEventListener('click', () => { itemCache.clear(); loadList(); });
 
 /* ---------- start ---------- */

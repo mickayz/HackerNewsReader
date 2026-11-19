@@ -1,5 +1,5 @@
 // Service worker: the app shell is cache-first; Hacker News data is network-first with a cached fallback for offline reading.
-const SHELL = 'hn-shell-v3';
+const SHELL = 'hn-shell-v4';
 const DATA = 'hn-data-v1';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 const API_HOSTS = ['hacker-news.firebaseio.com', 'hn.algolia.com'];

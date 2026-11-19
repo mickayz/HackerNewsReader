@@ -5,6 +5,7 @@ A small, installable Hacker News reader built as a single-page web app.
 ## Features
 
 - Top, New, Best, Ask, Show and Jobs feeds, plus a local Saved list
+- Story search (through the Algolia HN Search API)
 - Infinite scroll and pull to refresh
 - Threaded comments that collapse with a tap, with a button to jump to the next top-level thread
 - Navigation at the bottom of the screen for one-handed use, with Back on the right and swipe right to go back
